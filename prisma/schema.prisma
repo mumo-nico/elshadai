@@ -1,0 +1,298 @@
+// Elshadai Apartments - Prisma Schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model - for both landlords and tenants
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  phone     String?
+  role      UserRole @default(TENANT)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  tenants       Tenant[]
+  payments      Payment[]
+  complaints    Complaint[]
+  reports       Report[]
+  notifications Notification[]
+
+  @@map("users")
+}
+
+enum UserRole {
+  LANDLORD
+  TENANT
+}
+
+// Property model - represents the entire apartment complex
+model Property {
+  id          String   @id @default(cuid())
+  name        String
+  location    String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  units Unit[]
+
+  @@map("properties")
+}
+
+// Unit model - individual rental units
+model Unit {
+  id           String     @id @default(cuid())
+  unitNumber   String     @unique
+  unitType     UnitType
+  rent         Float
+  deposit      Float?
+  status       UnitStatus @default(AVAILABLE)
+  description  String?
+  propertyId   String
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  // Relations
+  property  Property   @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  tenants   Tenant[]
+  payments  Payment[]
+  complaints Complaint[]
+
+  @@map("units")
+}
+
+enum UnitType {
+  SHOP
+  SINGLE_ROOM
+  DOUBLE_ROOM
+  BEDSITTER
+  ONE_BEDROOM
+  TWO_BEDROOM
+}
+
+enum UnitStatus {
+  AVAILABLE
+  OCCUPIED
+  MAINTENANCE
+}
+
+// Tenant model - links users to units (a tenant can have multiple units)
+model Tenant {
+  id              String    @id @default(cuid())
+  tenantId        String?   @unique // Custom ID: ELSTNT-00001
+  userId          String
+  unitId          String
+  leaseStartDate  DateTime
+  leaseEndDate    DateTime?
+  monthlyRent     Float
+  depositPaid     Float?
+  rentDue         Float     @default(0) // Track outstanding rent
+  status          TenantStatus @default(ACTIVE)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  unit   Unit   @relation(fields: [unitId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, unitId])
+  @@map("tenants")
+}
+
+enum TenantStatus {
+  ACTIVE
+  INACTIVE
+  EVICTED
+}
+
+// Payment model - tracks rent payments
+model Payment {
+  id              String        @id @default(cuid())
+  paymentId       String?       @unique // Custom ID: ELSPMT-00001
+  receiptNumber   String?       @unique @default(cuid())
+  userId          String
+  unitId          String
+  amount          Float
+  paymentDate     DateTime      @default(now())
+  paymentMethod   PaymentMethod
+  referenceNumber String?
+  cashReceiver    String?       // For cash payments - who received it
+  month           Int           // Month number (1-12)
+  year            Int
+  isApproved      Boolean       @default(false)
+  approvedBy      String?       // Landlord who approved
+  approvedAt      DateTime?
+  status          PaymentStatus @default(PENDING)
+  notes           String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  unit Unit @relation(fields: [unitId], references: [id], onDelete: Cascade)
+
+  @@map("payments")
+}
+
+enum PaymentMethod {
+  MPESA
+  CASH
+  BANK_TRANSFER
+  BANK_CHEQUE
+}
+
+enum PaymentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
+// Complaint model - maintenance requests and complaints
+model Complaint {
+  id                  String           @id @default(cuid())
+  complaintId         String?          @unique // Custom ID: ELRPT-00001
+  userId              String
+  unitId              String
+  title               String
+  description         String
+  category            ComplaintCategory
+  priority            Priority         @default(MEDIUM)
+  status              ComplaintStatus  @default(PENDING)
+  assignedTo          String?
+  assignedToName      String?
+  assignedToPhone     String?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  resolvedAt          DateTime?
+  closedAt            DateTime?
+
+  // Relations
+  user     User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  unit     Unit              @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  comments ComplaintComment[]
+
+  @@map("complaints")
+}
+
+enum ComplaintCategory {
+  RENT
+  PLUMBING
+  ELECTRICAL
+  STRUCTURAL
+  CLEANING
+  SECURITY
+  SINK
+  APPLIANCES
+  HEATING_COOLING
+  PEST_CONTROL
+  NOISE
+  OTHER
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum ComplaintStatus {
+  PENDING
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+// Complaint comments for updates
+model ComplaintComment {
+  id          String    @id @default(cuid())
+  complaintId String
+  userId      String?
+  comment     String
+  createdAt   DateTime  @default(now())
+
+  // Relations
+  complaint Complaint @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+
+  @@map("complaint_comments")
+}
+
+// Report model - for generating various reports
+model Report {
+  id          String     @id @default(cuid())
+  userId      String
+  reportType  ReportType
+  title       String
+  description String?
+  startDate   DateTime
+  endDate     DateTime
+  data        Json?
+  createdAt   DateTime   @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("reports")
+}
+
+enum ReportType {
+  PAYMENT_HISTORY
+  TENANT_REPORT
+  OCCUPANCY_REPORT
+  MAINTENANCE_REPORT
+  FINANCIAL_SUMMARY
+}
+
+// Notification model - for system notifications
+model Notification {
+  id          String           @id @default(cuid())
+  userId      String
+  type        NotificationType
+  title       String
+  message     String
+  link        String?          // Link to related resource (e.g., /dashboard/payments?id=xxx)
+  isRead      Boolean          @default(false)
+  createdAt   DateTime         @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+enum NotificationType {
+  PAYMENT_APPROVED
+  PAYMENT_REJECTED
+  LEASE_REQUEST
+  COMPLAINT_UPDATE
+  SYSTEM
+}
+
+// Store Inventory model - for landlord's store keeping
+model Inventory {
+  id          String   @id @default(cuid())
+  itemName    String
+  category    String
+  date        DateTime
+  quantityIn  Float
+  unit        String   // kg, bags, pieces, liters, etc.
+  unitCost    Float
+  totalCost   Float    // Auto calculated = quantityIn × unitCost
+  supplier    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("inventory")
+}

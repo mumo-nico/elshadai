@@ -1,0 +1,17 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* simple app palette */
+:root {
+  --bg: #0f172a;
+  --muted: #64748b;
+}
+
+/* small helpers */
+.container {
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
