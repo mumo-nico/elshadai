@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
         type: "UNIT_ASSIGNED",
         title: "Unit Assigned",
         message: `You have been assigned to ${tenantAssignment.unit.unitNumber} at ${tenantAssignment.unit.property.name}. Your monthly rent is KSh ${monthlyRent.toLocaleString()}.`,
-        read: false,
+        isRead: false,
       },
     });
 
