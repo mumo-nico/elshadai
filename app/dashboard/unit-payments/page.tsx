@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { ArrowLeft, DollarSign, CheckCircle, XCircle, AlertCircle, Home } from "lucide-react";
 
@@ -22,7 +22,29 @@ interface PaymentHistory {
   }[];
 }
 
+// Loading fallback component
+function LoadingFallback() {
+  return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-neon-blue mx-auto mb-4"></div>
+        <p className="text-gray-600">Loading payment history...</p>
+      </div>
+    </div>
+  );
+}
+
+// Main page component that wraps the content in Suspense
 export default function UnitPaymentsPage() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <UnitPaymentsContent />
+    </Suspense>
+  );
+}
+
+// Content component that uses useSearchParams
+function UnitPaymentsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const unitId = searchParams.get("unitId");
