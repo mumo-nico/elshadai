@@ -70,12 +70,39 @@ export async function POST(request: NextRequest) {
       { message: "Account created successfully", user },
       { status: 201 }
     );
-  } catch (error) {
-    console.error("Error registering user:", error);
+  } catch (error: any) {
+    console.error("=== FULL ERROR OBJECT ===");
+    console.error("Error message:", error?.message);
+    console.error("Error code:", error?.code);
+    console.error("Error meta:", error?.meta);
+    console.error("Full error:", JSON.stringify(error, null, 2));
+
+    // Handle specific Prisma errors
+    if (error?.code === "P2002") {
+      const field = error?.meta?.target?.[0] || "email";
+      return NextResponse.json(
+        { error: `A user with this ${field} already exists` },
+        { status: 400 }
+      );
+    }
+
+    if (error?.code === "P2014") {
+      return NextResponse.json(
+        { error: "Invalid data provided" },
+        { status: 400 }
+      );
+    }
+
+    if (error?.code === "P2003") {
+      return NextResponse.json(
+        { error: "Invalid reference data" },
+        { status: 400 }
+      );
+    }
+
     return NextResponse.json(
-      { error: "Failed to create account" },
+      { error: "Failed to create account", details: error?.message },
       { status: 500 }
     );
   }
 }
-
