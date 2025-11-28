@@ -6,8 +6,9 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url      = env("ELSHADAI_DB_PRISMA_DATABASE_URL")
 }
+
 
 // User model - for both landlords and tenants
 model User {
