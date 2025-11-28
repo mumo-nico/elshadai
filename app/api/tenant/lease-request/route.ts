@@ -40,6 +40,7 @@ export async function POST(request: NextRequest) {
         unitId: unitId,
         title: `Lease Request for Unit ${unit.unitNumber}`,
         description: message || `I would like to lease Unit ${unit.unitNumber} at ${unit.property.name}.`,
+        category: "LEASE_REQUEST",
         status: "PENDING",
         priority: "MEDIUM",
       },

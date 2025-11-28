@@ -43,42 +43,53 @@ export default function ReportsPage() {
     setDateTo(lastDay.toISOString().split("T")[0]);
   }, []);
 
-  // Initialize flatpickr
+  // Initialize flatpickr when a report is selected
   useEffect(() => {
-    const fromElement = document.getElementById("dateFrom");
-    const toElement = document.getElementById("dateTo");
+    // Only initialize if a report is selected (inputs are rendered)
+    if (!selectedReport) return;
 
-    if (!fromElement || !toElement) return;
+    // Wait for initial dates to be set
+    if (!dateFrom || !dateTo) return;
 
-    const fromPicker = flatpickr(fromElement, {
-      dateFormat: "Y-m-d",
-      defaultDate: dateFrom,
-      onChange: (selectedDates) => {
-        if (selectedDates[0]) {
-          setDateFrom(selectedDates[0].toISOString().split("T")[0]);
+    // Small delay to ensure DOM is ready
+    const timer = setTimeout(() => {
+      const fromElement = document.getElementById("dateFrom") as HTMLInputElement;
+      const toElement = document.getElementById("dateTo") as HTMLInputElement;
+
+      if (!fromElement || !toElement) return;
+
+      const fromPicker = flatpickr(fromElement, {
+        dateFormat: "Y-m-d",
+        defaultDate: dateFrom,
+        onChange: (selectedDates) => {
+          if (selectedDates[0]) {
+            setDateFrom(selectedDates[0].toISOString().split("T")[0]);
+          }
+        },
+      });
+
+      const toPicker = flatpickr(toElement, {
+        dateFormat: "Y-m-d",
+        defaultDate: dateTo,
+        onChange: (selectedDates) => {
+          if (selectedDates[0]) {
+            setDateTo(selectedDates[0].toISOString().split("T")[0]);
+          }
+        },
+      });
+
+      return () => {
+        if (fromPicker && typeof fromPicker.destroy === "function") {
+          fromPicker.destroy();
         }
-      },
-    });
-
-    const toPicker = flatpickr(toElement, {
-      dateFormat: "Y-m-d",
-      defaultDate: dateTo,
-      onChange: (selectedDates) => {
-        if (selectedDates[0]) {
-          setDateTo(selectedDates[0].toISOString().split("T")[0]);
+        if (toPicker && typeof toPicker.destroy === "function") {
+          toPicker.destroy();
         }
-      },
-    });
+      };
+    }, 100);
 
-    return () => {
-      if (fromPicker && typeof fromPicker.destroy === "function") {
-        fromPicker.destroy();
-      }
-      if (toPicker && typeof toPicker.destroy === "function") {
-        toPicker.destroy();
-      }
-    };
-  }, []);
+    return () => clearTimeout(timer);
+  }, [selectedReport]); // Re-initialize when report changes
 
   const fetchReportData = async (type: ReportType) => {
     if (!type) return;

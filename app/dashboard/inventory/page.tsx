@@ -13,9 +13,13 @@ import {
   DollarSign,
   Calendar,
   ShoppingCart,
+  FileText,
+  FileSpreadsheet,
 } from "lucide-react";
 import flatpickr from "flatpickr";
 import "flatpickr/dist/flatpickr.min.css";
+import { generatePDFReport } from "@/lib/pdf-report-generator";
+import { generateExcelReport } from "@/lib/excel-generator";
 
 interface InventoryItem {
   id: string;
@@ -258,6 +262,68 @@ export default function InventoryPage() {
     return itemDate >= fromDate && itemDate <= toDate;
   });
 
+  // Download PDF function
+  const handleDownloadPDF = () => {
+    if (filteredInventory.length === 0) {
+      alert("No inventory items to download for the selected date range.");
+      return;
+    }
+
+    const headers = ["Item Name", "Category", "Date", "Quantity", "Unit Cost", "Total Cost", "Supplier"];
+    const data = filteredInventory.map((item) => [
+      item.itemName,
+      item.category,
+      new Date(item.date).toLocaleDateString(),
+      `${item.quantityIn} ${item.unit}`,
+      `KSh ${item.unitCost.toLocaleString()}`,
+      `KSh ${item.totalCost.toLocaleString()}`,
+      item.supplier || "N/A",
+    ]);
+
+    const dateRange = dateFrom && dateTo
+      ? `${new Date(dateFrom).toLocaleDateString()} - ${new Date(dateTo).toLocaleDateString()}`
+      : "All Time";
+
+    generatePDFReport({
+      title: "Store Inventory Report",
+      dateRange,
+      headers,
+      data,
+      filename: `inventory-report-${dateFrom}-to-${dateTo}.pdf`,
+    });
+  };
+
+  // Download Excel function
+  const handleDownloadExcel = () => {
+    if (filteredInventory.length === 0) {
+      alert("No inventory items to download for the selected date range.");
+      return;
+    }
+
+    const headers = ["Item Name", "Category", "Date", "Quantity", "Unit Cost", "Total Cost", "Supplier"];
+    const data = filteredInventory.map((item) => [
+      item.itemName,
+      item.category,
+      new Date(item.date).toLocaleDateString(),
+      `${item.quantityIn} ${item.unit}`,
+      `KSh ${item.unitCost.toLocaleString()}`,
+      `KSh ${item.totalCost.toLocaleString()}`,
+      item.supplier || "N/A",
+    ]);
+
+    const dateRange = dateFrom && dateTo
+      ? `${new Date(dateFrom).toLocaleDateString()} - ${new Date(dateTo).toLocaleDateString()}`
+      : "All Time";
+
+    generateExcelReport({
+      title: "Store Inventory Report",
+      dateRange,
+      headers,
+      data,
+      filename: `inventory-report-${dateFrom}-to-${dateTo}.xlsx`,
+    });
+  };
+
   if (session?.user.role !== "LANDLORD") {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -301,13 +367,31 @@ export default function InventoryPage() {
           <h1 className="text-3xl font-bold text-navy-dark">Store Inventory</h1>
           <p className="text-gray-600 mt-2">Manage your store keeping inventory</p>
         </div>
-        <button
-          onClick={handleOpenModal}
-          className="flex items-center gap-2 px-6 py-3 bg-neon-blue text-white rounded-xl hover:bg-sky-blue transition-colors shadow-lg"
-        >
-          <Plus className="w-5 h-5" />
-          Add Inventory
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleDownloadPDF}
+            className="flex items-center gap-2 px-4 py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors shadow-lg"
+            title="Download PDF"
+          >
+            <FileText className="w-5 h-5" />
+            PDF
+          </button>
+          <button
+            onClick={handleDownloadExcel}
+            className="flex items-center gap-2 px-4 py-3 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-colors shadow-lg"
+            title="Download Excel"
+          >
+            <FileSpreadsheet className="w-5 h-5" />
+            Excel
+          </button>
+          <button
+            onClick={handleOpenModal}
+            className="flex items-center gap-2 px-6 py-3 bg-neon-blue text-white rounded-xl hover:bg-sky-blue transition-colors shadow-lg"
+          >
+            <Plus className="w-5 h-5" />
+            Add Inventory
+          </button>
+        </div>
       </div>
 
       {/* Statistics Cards */}

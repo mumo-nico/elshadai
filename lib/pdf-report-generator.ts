@@ -1,12 +1,5 @@
 import jsPDF from "jspdf";
-import "jspdf-autotable";
-
-// Extend jsPDF type to include autoTable
-declare module "jspdf" {
-  interface jsPDF {
-    autoTable: (options: any) => jsPDF;
-  }
-}
+import autoTable from "jspdf-autotable";
 
 interface PDFReportOptions {
   title: string;
@@ -73,8 +66,8 @@ export function generatePDFReport(options: PDFReportOptions) {
   );
   startY += 10;
 
-  // Table
-  doc.autoTable({
+  // Table using autoTable function
+  autoTable(doc, {
     head: [headers],
     body: data,
     startY: startY,

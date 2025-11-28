@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Home, MapPin, DollarSign, Calendar, Send, Eye, X, CheckCircle, XCircle, AlertCircle } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useRouter } from "next/navigation";
+import { Home, MapPin, DollarSign, Calendar, Send, Eye } from "lucide-react";
 
 interface Property {
   id: string;
@@ -32,37 +32,16 @@ interface UnitsData {
 }
 
 export default function TenantUnitsPage() {
+  const router = useRouter();
   const [unitsData, setUnitsData] = useState<UnitsData>({ myUnits: [], availableUnits: [] });
   const [loading, setLoading] = useState(true);
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
   const [requestMessage, setRequestMessage] = useState("");
-  const [isPaymentsModalOpen, setIsPaymentsModalOpen] = useState(false);
-  const [paymentHistory, setPaymentHistory] = useState<any>(null);
-  const [loadingPayments, setLoadingPayments] = useState(false);
 
   useEffect(() => {
     fetchUnits();
   }, []);
-
-  const fetchPaymentHistory = async (unitId: string) => {
-    setLoadingPayments(true);
-    try {
-      const response = await fetch(`/api/tenant/unit-payments?unitId=${unitId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setPaymentHistory(data);
-        setIsPaymentsModalOpen(true);
-      } else {
-        alert("Failed to fetch payment history");
-      }
-    } catch (error) {
-      console.error("Error fetching payment history:", error);
-      alert("Failed to fetch payment history");
-    } finally {
-      setLoadingPayments(false);
-    }
-  };
 
   const fetchUnits = async () => {
     try {
@@ -208,12 +187,11 @@ export default function TenantUnitsPage() {
                       </div>
 
                       <button
-                        onClick={() => fetchPaymentHistory(unit.id)}
-                        disabled={loadingPayments}
-                        className="w-full mt-4 px-4 py-2 bg-neon-blue text-white rounded-lg hover:bg-sky-blue transition-colors font-medium flex items-center justify-center gap-2 disabled:opacity-50"
+                        onClick={() => router.push(`/dashboard/unit-payments?unitId=${unit.id}`)}
+                        className="w-full mt-4 px-4 py-2 bg-neon-blue text-white rounded-lg hover:bg-sky-blue transition-colors font-medium flex items-center justify-center gap-2"
                       >
                         <Eye className="w-4 h-4" />
-                        {loadingPayments ? "Loading..." : "View Payments"}
+                        View Payments
                       </button>
                     </>
                   )}
@@ -371,147 +349,6 @@ export default function TenantUnitsPage() {
           </div>
         </div>
       )}
-
-      {/* Payment History Modal */}
-      <AnimatePresence>
-        {isPaymentsModalOpen && paymentHistory && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden"
-            >
-              <div className="bg-gradient-to-r from-neon-blue to-sky-blue p-6 text-white">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-2xl font-bold">Payment History</h2>
-                    <p className="text-white/80 text-sm mt-1">
-                      Unit {paymentHistory.unit.unitNumber} - {paymentHistory.unit.property}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setIsPaymentsModalOpen(false);
-                      setPaymentHistory(null);
-                    }}
-                    className="p-2 hover:bg-white/20 rounded-lg transition-colors"
-                  >
-                    <X className="w-6 h-6" />
-                  </button>
-                </div>
-              </div>
-
-              <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
-                {/* Summary Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                  <div className="bg-blue-50 rounded-xl p-4 border-2 border-blue-100">
-                    <p className="text-sm text-gray-600 mb-1">Total Paid</p>
-                    <p className="text-2xl font-bold text-neon-blue">
-                      KSh {paymentHistory.totalPaid.toLocaleString()}
-                    </p>
-                  </div>
-                  <div className="bg-green-50 rounded-xl p-4 border-2 border-green-100">
-                    <p className="text-sm text-gray-600 mb-1">Overpayment</p>
-                    <p className="text-2xl font-bold text-green-600">
-                      KSh {paymentHistory.overpayment.toLocaleString()}
-                    </p>
-                  </div>
-                  <div className="bg-red-50 rounded-xl p-4 border-2 border-red-100">
-                    <p className="text-sm text-gray-600 mb-1">Rent Due</p>
-                    <p className="text-2xl font-bold text-red-600">
-                      KSh {paymentHistory.rentDue.toLocaleString()}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Monthly Breakdown Table */}
-                <div className="bg-white rounded-xl border-2 border-gray-100 overflow-hidden">
-                  <div className="bg-gray-50 px-6 py-4 border-b-2 border-gray-100">
-                    <h3 className="font-bold text-navy-dark">Monthly Breakdown</h3>
-                  </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead className="bg-gray-50 border-b-2 border-gray-100">
-                        <tr>
-                          <th className="px-6 py-3 text-left text-sm font-semibold text-navy-dark">
-                            Month
-                          </th>
-                          <th className="px-6 py-3 text-left text-sm font-semibold text-navy-dark">
-                            Monthly Rent
-                          </th>
-                          <th className="px-6 py-3 text-left text-sm font-semibold text-navy-dark">
-                            Amount Paid
-                          </th>
-                          <th className="px-6 py-3 text-left text-sm font-semibold text-navy-dark">
-                            Status
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100">
-                        {paymentHistory.monthlyBreakdown.length === 0 ? (
-                          <tr>
-                            <td colSpan={4} className="px-6 py-8 text-center text-gray-500">
-                              No payment records found
-                            </td>
-                          </tr>
-                        ) : (
-                          paymentHistory.monthlyBreakdown.map((month: any, index: number) => (
-                            <tr key={index} className="hover:bg-gray-50 transition-colors">
-                              <td className="px-6 py-4 text-navy-dark font-medium">
-                                {month.month}
-                              </td>
-                              <td className="px-6 py-4 text-gray-600">
-                                KSh {month.monthlyRent.toLocaleString()}
-                              </td>
-                              <td className="px-6 py-4 text-navy-dark font-semibold">
-                                KSh {month.amountPaid.toLocaleString()}
-                              </td>
-                              <td className="px-6 py-4">
-                                {month.status === "FULLY_PAID" && (
-                                  <span className="flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium w-fit">
-                                    <CheckCircle className="w-4 h-4" />
-                                    Fully Paid
-                                  </span>
-                                )}
-                                {month.status === "PARTIALLY_PAID" && (
-                                  <span className="flex items-center gap-1 px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-sm font-medium w-fit">
-                                    <AlertCircle className="w-4 h-4" />
-                                    Partially Paid
-                                  </span>
-                                )}
-                                {month.status === "NOT_PAID" && (
-                                  <span className="flex items-center gap-1 px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm font-medium w-fit">
-                                    <XCircle className="w-4 h-4" />
-                                    Not Paid
-                                  </span>
-                                )}
-                              </td>
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                {/* Pay Rent Button */}
-                {paymentHistory.rentDue > 0 && (
-                  <div className="mt-6">
-                    <a
-                      href="/dashboard/payments"
-                      className="block w-full px-6 py-3 bg-neon-blue text-white rounded-xl hover:bg-sky-blue transition-colors font-medium text-center"
-                    >
-                      <DollarSign className="w-5 h-5 inline mr-2" />
-                      Pay Rent (KSh {paymentHistory.rentDue.toLocaleString()} due)
-                    </a>
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }
